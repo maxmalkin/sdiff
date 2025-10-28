@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**SDIFF** is a high-performance semantic diff tool that intelligently compares structured data files (JSON, YAML) and shows only meaningful changes, ignoring formatting, whitespace, and key ordering differences.
+**SDIFF** is a high-performance semantic diff tool that compares structured data files (JSON, YAML) and shows only meaningful changes, ignoring formatting, whitespace, and key ordering differences.
 
 ## The Problem
 
@@ -14,7 +14,7 @@ Traditional diff tools like `diff` and `git diff` show line-by-line changes, whi
 
 ## The Solution
 
-SDIFF parses files into Abstract Syntax Trees (ASTs) and compares the semantic structure, not the text representation.
+SDIFF parses files into Abstract Syntax Trees and compares the semantic structure, not the text representation.
 
 ### Example
 
@@ -58,17 +58,17 @@ Summary: 1 modified
 - **Semantic comparison**: Ignores formatting, whitespace, and key ordering
 - **Multiple formats**: Supports JSON and YAML (mixed comparisons supported)
 - **Colored output**: Visual distinction between added, removed, and modified fields
-- **Three output modes**: Terminal (colored), JSON (programmatic), Plain (pipe-friendly)
+- **Three output modes**: Terminal, JSON, Plain
 - **Configurable**: Control verbosity, value display, whitespace handling
-- **Fast**: Written in Rust with optimized algorithms
-- **Library + CLI**: Use as a command-line tool or integrate into your Rust projects
+- **Fast**: Written in Rust with quicker algorithms
+- **Library + CLI**: Use as a CLI tool or integrate into your projects
 
 ## Installation
 
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/sdiff
+git clone https://github.com/maxmalkin/sdiff
 cd sdiff
 cargo build --release
 cargo install --path .
@@ -240,7 +240,7 @@ Plain text without colors (suitable for piping):
 Summary: 1 modified
 ```
 
-## Library Usage
+## Library
 
 SDIFF can also be used as a Rust library:
 
@@ -278,15 +278,15 @@ sdiff = "0.1"
 
 ## Supported Formats
 
-- **JSON**: Full JSON support via `serde_json`
-- **YAML**: Full YAML 1.2 support via `serde_yaml`
+- **JSON**: Full JSON support
+- **YAML**: Full YAML 1.2 support
   - Anchors and aliases are resolved
   - Tags are evaluated
   - Non-string keys are converted to strings
 
 Format detection is automatic based on file extension (`.json`, `.yaml`, `.yml`), with fallback detection if extension is unknown.
 
-## Comparison to Other Tools
+<!--## Comparison to Other Tools
 
 | Feature | SDIFF | jq | diff | dyff |
 |---------|-------|-----|------|------|
@@ -299,7 +299,7 @@ Format detection is automatic based on file extension (`.json`, `.yaml`, `.yml`)
 | Mixed JSON/YAML | ✅ | ❌ | ❌ | ✅ |
 | Standalone binary | ✅ | ✅ | ✅ | ✅ |
 | Library API | ✅ | ❌ | ❌ | ❌ |
-| Written in Rust | ✅ | ❌ | ❌ | ❌ |
+| Written in Rust | ✅ | ❌ | ❌ | ❌ |-->
 
 ## Performance
 
@@ -309,7 +309,6 @@ SDIFF is designed for high performance:
 - **Memory**: Uses less than 50MB for typical files (< 10MB)
 - **Binary size**: Under 5MB (release build)
 
-Benchmarks on a modern laptop (indicative):
 - 10KB files: ~1ms
 - 100KB files: ~10ms
 - 1MB files: ~80ms
@@ -328,37 +327,37 @@ The AST representation normalizes:
 - Number representation (all stored as f64)
 - File format differences (JSON vs YAML)
 
-## Development
+<!--## Development
 
 ### Building
 
 ```bash
 cargo build          # Debug build
 cargo build --release  # Optimized release build
-```
+```-->
 
-### Testing
+<!--### Testing
 
 ```bash
 cargo test           # Run all tests
 cargo test --lib     # Unit tests only
 cargo test --test integration_tests  # Integration tests only
-```
+```-->
 
-### Linting
+<!--### Linting
 
 ```bash
 cargo fmt            # Format code
 cargo clippy         # Run lints
-```
+```-->
 
-### Documentation
+<!--### Documentation
 
 ```bash
 cargo doc --no-deps --open  # Generate and open documentation
-```
+```-->
 
-## Project Structure
+## Structure
 
 ```
 sdiff/
@@ -376,7 +375,7 @@ sdiff/
 └── Cargo.toml
 ```
 
-## Contributing
+<!--## Contributing
 
 Contributions are welcome! Please:
 
@@ -396,22 +395,14 @@ Please follow conventional commit message format:
 - `docs:` for documentation changes
 - `test:` for test additions/changes
 - `refactor:` for code refactoring
-- `chore:` for maintenance tasks
+- `chore:` for maintenance tasks-->
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
-## Acknowledgments
+## To-do
 
-- Built with [Rust](https://www.rust-lang.org/)
-- Uses [serde](https://serde.rs/) for serialization
-- CLI powered by [clap](https://github.com/clap-rs/clap)
-- Colors provided by [colored](https://github.com/mackwic/colored)
-
-## Roadmap
-
-Future enhancements:
 - [ ] LCS-based array diffing for better array change detection
 - [ ] Context lines around changes
 - [ ] Configurable color schemes
@@ -419,12 +410,3 @@ Future enhancements:
 - [ ] Support for more formats (TOML, XML)
 - [ ] Streaming mode for very large files
 - [ ] Interactive mode for conflict resolution
-
-## Contact
-
-- Report bugs: [GitHub Issues](https://github.com/yourusername/sdiff/issues)
-- Feature requests: [GitHub Discussions](https://github.com/yourusername/sdiff/discussions)
-
----
-
-Made with ❤️ in Rust
