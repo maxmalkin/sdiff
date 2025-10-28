@@ -212,9 +212,8 @@ fn format_json(diff: &Diff) -> Result<String, OutputError> {
         }
     });
 
-    serde_json::to_string_pretty(&output).map_err(|e| OutputError::JsonSerializationError {
-        source: e,
-    })
+    serde_json::to_string_pretty(&output)
+        .map_err(|e| OutputError::JsonSerializationError { source: e })
 }
 
 /// Formats a diff for plain text output (no colors).
@@ -408,8 +407,7 @@ fn node_to_json_value(node: &Node) -> serde_json::Value {
         Node::Number(n) => json!(n),
         Node::String(s) => json!(s),
         Node::Array(arr) => {
-            let values: Vec<serde_json::Value> =
-                arr.iter().map(node_to_json_value).collect();
+            let values: Vec<serde_json::Value> = arr.iter().map(node_to_json_value).collect();
             json!(values)
         }
         Node::Object(map) => {
@@ -595,8 +593,14 @@ mod tests {
     #[test]
     fn test_node_to_json_value() {
         assert_eq!(node_to_json_value(&Node::Null), serde_json::json!(null));
-        assert_eq!(node_to_json_value(&Node::Bool(true)), serde_json::json!(true));
-        assert_eq!(node_to_json_value(&Node::Number(42.0)), serde_json::json!(42.0));
+        assert_eq!(
+            node_to_json_value(&Node::Bool(true)),
+            serde_json::json!(true)
+        );
+        assert_eq!(
+            node_to_json_value(&Node::Number(42.0)),
+            serde_json::json!(42.0)
+        );
         assert_eq!(
             node_to_json_value(&Node::String("test".to_string())),
             serde_json::json!("test")

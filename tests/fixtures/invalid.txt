@@ -1,2 +1,3 @@
-This is not valid JSON or YAML
-{broken syntax}
+{
+  "broken": "json",
+  "missing": "closing brace"
