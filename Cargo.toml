@@ -1,0 +1,31 @@
+[package]
+name = "sdiff"
+version = "0.1.0"
+edition = "2021"
+authors = ["Max <max@example.com>"]
+description = "Semantic diff tool for structured data (JSON, YAML)"
+license = "MIT"
+repository = "https://github.com/yourusername/sdiff"
+keywords = ["diff", "semantic", "json", "yaml", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+clap = { version = "4.4", features = ["derive"] }
+colored = "2.0"
+anyhow = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
+tempfile = "3.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
