@@ -56,6 +56,19 @@ pub enum ParseError {
         source: serde_yaml::Error,
     },
 
+    /// The file contains invalid TOML syntax.
+    ///
+    /// This error occurs when the file appears to be TOML but has syntax errors
+    /// that prevent parsing.
+    #[error("Invalid TOML in {path}: {source}")]
+    TomlError {
+        /// The path to the file with invalid TOML
+        path: String,
+        /// The underlying TOML parsing error
+        #[source]
+        source: toml::de::Error,
+    },
+
     /// Could not determine the file format.
     ///
     /// This error occurs when the file extension is unknown and attempts to parse
@@ -141,6 +154,14 @@ impl ParseError {
     /// Creates a `YamlError` from a path and YAML parsing error.
     pub fn yaml_error(path: impl Into<String>, source: serde_yaml::Error) -> Self {
         Self::YamlError {
+            path: path.into(),
+            source,
+        }
+    }
+
+    /// Creates a `TomlError` from a path and TOML parsing error.
+    pub fn toml_error(path: impl Into<String>, source: toml::de::Error) -> Self {
+        Self::TomlError {
             path: path.into(),
             source,
         }
