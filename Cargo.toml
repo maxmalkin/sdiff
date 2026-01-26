@@ -2,10 +2,10 @@
 name = "sdiff"
 version = "0.1.0"
 edition = "2021"
-authors = ["Max <max@example.com>"]
+authors = ["Max <max@malkin.io>"]
 description = "Semantic diff tool for structured data (JSON, YAML)"
 license = "MIT"
-repository = "https://github.com/yourusername/sdiff"
+repository = "https://github.com/maxmalkin/sdiff"
 keywords = ["diff", "semantic", "json", "yaml", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
