@@ -8,7 +8,7 @@ use predicates::prelude::*;
 
 /// Helper to create a Command for the sdiff binary
 fn sdiff() -> Command {
-    Command::cargo_bin("sdiff").unwrap()
+    Command::new(assert_cmd::cargo::cargo_bin!("sdiff"))
 }
 
 #[test]
