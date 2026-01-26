@@ -1,4 +1,4 @@
-//! File parsing for JSON and YAML formats.
+//! File parsing for JSON, YAML, and TOML formats.
 //!
 //! This module handles parsing structured data files into our AST representation.
 //! It supports automatic format detection based on file extension, and falls back
@@ -24,7 +24,84 @@ use crate::error::ParseError;
 use crate::tree::Node;
 use std::collections::HashMap;
 use std::fs;
+use std::io::{self, Read};
 use std::path::Path;
+
+/// Hint for the input format when auto-detection is not possible.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FormatHint {
+    /// Automatically detect format (try JSON, then YAML, then TOML)
+    #[default]
+    Auto,
+    /// Parse as JSON
+    Json,
+    /// Parse as YAML
+    Yaml,
+    /// Parse as TOML
+    Toml,
+}
+
+/// Parses content from stdin into a Node.
+///
+/// Since stdin has no file extension, format detection relies on the provided
+/// hint or tries JSON, YAML, and TOML in sequence if hint is Auto.
+///
+/// # Arguments
+///
+/// * `hint` - Format hint for parsing (Auto will try all formats)
+///
+/// # Returns
+///
+/// Returns the parsed Node on success, or a ParseError on failure.
+///
+/// # Examples
+///
+/// ```no_run
+/// use sdiff::parser::{parse_stdin, FormatHint};
+///
+/// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let node = parse_stdin(FormatHint::Json)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn parse_stdin(hint: FormatHint) -> Result<Node, ParseError> {
+    let mut content = String::new();
+    io::stdin()
+        .read_to_string(&mut content)
+        .map_err(|e| ParseError::read_error("<stdin>", e))?;
+
+    parse_content(&content, hint, "<stdin>")
+}
+
+/// Parses content string with the given format hint.
+///
+/// # Arguments
+///
+/// * `content` - The content string to parse
+/// * `hint` - Format hint for parsing
+/// * `source` - Source name for error messages (e.g., filename or "<stdin>")
+///
+/// # Returns
+///
+/// Returns the parsed Node on success, or a ParseError on failure.
+pub fn parse_content(content: &str, hint: FormatHint, source: &str) -> Result<Node, ParseError> {
+    match hint {
+        FormatHint::Json => {
+            parse_json(content).map_err(|e| ParseError::json_error(source.to_string(), e))
+        }
+        FormatHint::Yaml => {
+            parse_yaml(content).map_err(|e| ParseError::yaml_error(source.to_string(), e))
+        }
+        FormatHint::Toml => {
+            parse_toml(content).map_err(|e| ParseError::toml_error(source.to_string(), e))
+        }
+        FormatHint::Auto => parse_json(content)
+            .map_err(|_| ())
+            .or_else(|_| parse_yaml(content).map_err(|_| ()))
+            .or_else(|_| parse_toml(content).map_err(|_| ()))
+            .map_err(|_| ParseError::unknown_format(source.to_string())),
+    }
+}
 
 /// Parses a file into a Node AST.
 ///
