@@ -829,4 +829,202 @@ mod tests {
         assert_eq!(normalize_whitespace("hello"), "hello");
         assert_eq!(normalize_whitespace("   "), "");
     }
+
+    #[test]
+    fn test_lcs_basic() {
+        let config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Lcs,
+            ..Default::default()
+        };
+
+        // [1, 2, 3] -> [1, 4, 2, 3] should show 4 as inserted at [1]
+        let old = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(2.0),
+            Node::Number(3.0),
+        ]);
+        let new = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(4.0),
+            Node::Number(2.0),
+            Node::Number(3.0),
+        ]);
+
+        let diff = compute_diff(&old, &new, &config);
+        assert_eq!(diff.stats.added, 1);
+        assert_eq!(diff.stats.removed, 0);
+        assert_eq!(diff.stats.modified, 0);
+
+        let added = diff
+            .changes
+            .iter()
+            .find(|c| c.change_type == ChangeType::Added)
+            .unwrap();
+        assert_eq!(added.new_value, Some(Node::Number(4.0)));
+    }
+
+    #[test]
+    fn test_lcs_deletion() {
+        let config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Lcs,
+            ..Default::default()
+        };
+
+        // [1, 2, 3, 4] -> [1, 3, 4] should show 2 as removed
+        let old = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(2.0),
+            Node::Number(3.0),
+            Node::Number(4.0),
+        ]);
+        let new = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(3.0),
+            Node::Number(4.0),
+        ]);
+
+        let diff = compute_diff(&old, &new, &config);
+        assert_eq!(diff.stats.removed, 1);
+        assert_eq!(diff.stats.added, 0);
+        assert_eq!(diff.stats.modified, 0);
+
+        let removed = diff
+            .changes
+            .iter()
+            .find(|c| c.change_type == ChangeType::Removed)
+            .unwrap();
+        assert_eq!(removed.old_value, Some(Node::Number(2.0)));
+    }
+
+    #[test]
+    fn test_lcs_reorder() {
+        let config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Lcs,
+            ..Default::default()
+        };
+
+        // [1, 2, 3] -> [3, 1, 2] - effectively 3 moved to front
+        // LCS is [1, 2], so 3 is deleted and re-inserted
+        let old = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(2.0),
+            Node::Number(3.0),
+        ]);
+        let new = Node::Array(vec![
+            Node::Number(3.0),
+            Node::Number(1.0),
+            Node::Number(2.0),
+        ]);
+
+        let diff = compute_diff(&old, &new, &config);
+        // 3 is inserted at front (add), 3 is removed from end (remove)
+        assert_eq!(diff.stats.added, 1);
+        assert_eq!(diff.stats.removed, 1);
+    }
+
+    #[test]
+    fn test_lcs_nested_objects() {
+        let config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Lcs,
+            ..Default::default()
+        };
+
+        // Array of objects with modifications
+        let mut obj1_old = HashMap::new();
+        obj1_old.insert("id".to_string(), Node::Number(1.0));
+        obj1_old.insert("name".to_string(), Node::String("Alice".to_string()));
+
+        let mut obj2 = HashMap::new();
+        obj2.insert("id".to_string(), Node::Number(2.0));
+        obj2.insert("name".to_string(), Node::String("Bob".to_string()));
+
+        let mut obj1_new = HashMap::new();
+        obj1_new.insert("id".to_string(), Node::Number(1.0));
+        obj1_new.insert("name".to_string(), Node::String("Alicia".to_string())); // Modified
+
+        let old = Node::Array(vec![Node::Object(obj1_old), Node::Object(obj2.clone())]);
+        let new = Node::Array(vec![Node::Object(obj1_new), Node::Object(obj2)]);
+
+        let diff = compute_diff(&old, &new, &config);
+        // With LCS, the objects are compared semantically, so obj1 differs
+        // This should show as modification of name within the first object
+        assert_eq!(diff.stats.modified, 1);
+
+        let change = diff
+            .changes
+            .iter()
+            .find(|c| c.change_type == ChangeType::Modified)
+            .unwrap();
+        assert!(change.path.contains(&"name".to_string()));
+    }
+
+    #[test]
+    fn test_lcs_empty_arrays() {
+        let config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Lcs,
+            ..Default::default()
+        };
+
+        let empty = Node::Array(vec![]);
+        let non_empty = Node::Array(vec![Node::Number(1.0), Node::Number(2.0)]);
+
+        // Empty to non-empty: all additions
+        let diff = compute_diff(&empty, &non_empty, &config);
+        assert_eq!(diff.stats.added, 2);
+        assert_eq!(diff.stats.removed, 0);
+
+        // Non-empty to empty: all deletions
+        let diff = compute_diff(&non_empty, &empty, &config);
+        assert_eq!(diff.stats.removed, 2);
+        assert_eq!(diff.stats.added, 0);
+    }
+
+    #[test]
+    fn test_lcs_vs_positional_comparison() {
+        // This test demonstrates the difference between strategies
+        // [1, 2, 3] -> [1, 4, 2, 3]
+        //
+        // Positional sees:
+        //   [0]: 1 == 1 (unchanged)
+        //   [1]: 2 -> 4 (modified)
+        //   [2]: 3 -> 2 (modified)
+        //   [3]: added 3
+        //
+        // LCS sees:
+        //   1 kept, 4 inserted, 2 kept, 3 kept
+
+        let old = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(2.0),
+            Node::Number(3.0),
+        ]);
+        let new = Node::Array(vec![
+            Node::Number(1.0),
+            Node::Number(4.0),
+            Node::Number(2.0),
+            Node::Number(3.0),
+        ]);
+
+        let positional_config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Positional,
+            ..Default::default()
+        };
+        let lcs_config = DiffConfig {
+            array_diff_strategy: ArrayDiffStrategy::Lcs,
+            ..Default::default()
+        };
+
+        let positional_diff = compute_diff(&old, &new, &positional_config);
+        let lcs_diff = compute_diff(&old, &new, &lcs_config);
+
+        // Positional: 2 modifications + 1 addition
+        assert_eq!(positional_diff.stats.modified, 2);
+        assert_eq!(positional_diff.stats.added, 1);
+        assert_eq!(positional_diff.stats.removed, 0);
+
+        // LCS: 1 addition (more accurate)
+        assert_eq!(lcs_diff.stats.modified, 0);
+        assert_eq!(lcs_diff.stats.added, 1);
+        assert_eq!(lcs_diff.stats.removed, 0);
+    }
 }
