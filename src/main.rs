@@ -4,36 +4,43 @@
 //! argument parsing and wires together all the library modules to perform
 //! semantic diffs on structured data files.
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
 use sdiff::{
-    compute_diff, format_diff, parse_file, ArrayDiffStrategy, DiffConfig, OutputFormat,
-    OutputOptions,
+    compute_diff, filter::filter_diff, filter::FilterConfig, format_diff, parse_content,
+    parse_file, ArrayDiffStrategy, DiffConfig, FormatHint, OutputFormat, OutputOptions,
 };
+use std::io::{self, Read};
 use std::path::PathBuf;
 use std::process;
 
 /// SDIFF - Semantic diff tool for structured data
 ///
-/// Intelligently compares JSON and YAML files, showing only meaningful changes
+/// Intelligently compares JSON, YAML, and TOML files, showing only meaningful changes
 /// while ignoring formatting, whitespace, and key ordering differences.
+///
+/// Use "-" to read from stdin: `cat file.json | sdiff - other.json`
 #[derive(Parser)]
 #[command(name = "sdiff")]
 #[command(version)]
 #[command(about = "Semantic diff tool for structured data", long_about = None)]
 #[command(author = "SDIFF Contributors")]
 struct Cli {
-    /// First file to compare
+    /// First file to compare (use "-" for stdin)
     #[arg(value_name = "FILE1")]
-    file1: PathBuf,
+    file1: String,
 
-    /// Second file to compare
+    /// Second file to compare (use "-" for stdin)
     #[arg(value_name = "FILE2")]
-    file2: PathBuf,
+    file2: String,
 
     /// Output format
     #[arg(short = 'f', long, value_enum, default_value = "terminal")]
     format: OutputFormatArg,
+
+    /// Input format for stdin (required when using "-")
+    #[arg(long, value_enum)]
+    input_format: Option<InputFormatArg>,
 
     /// Show only changes (hide unchanged fields)
     #[arg(short, long, default_value = "true")]
@@ -54,6 +61,14 @@ struct Cli {
     /// Ignore whitespace differences in strings
     #[arg(long)]
     ignore_whitespace: bool,
+
+    /// Ignore paths matching these patterns (can be used multiple times)
+    #[arg(long = "ignore", value_name = "PATTERN")]
+    ignore_patterns: Vec<String>,
+
+    /// Only show paths matching these patterns (can be used multiple times)
+    #[arg(long = "only", value_name = "PATTERN")]
+    only_patterns: Vec<String>,
 
     /// Verbose output (show parsing progress)
     #[arg(short, long)]
@@ -85,6 +100,30 @@ impl From<OutputFormatArg> for OutputFormat {
     }
 }
 
+/// Input format argument for clap
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum InputFormatArg {
+    /// JSON format
+    Json,
+    /// YAML format
+    Yaml,
+    /// TOML format
+    Toml,
+    /// Auto-detect format
+    Auto,
+}
+
+impl From<InputFormatArg> for FormatHint {
+    fn from(arg: InputFormatArg) -> Self {
+        match arg {
+            InputFormatArg::Json => FormatHint::Json,
+            InputFormatArg::Yaml => FormatHint::Yaml,
+            InputFormatArg::Toml => FormatHint::Toml,
+            InputFormatArg::Auto => FormatHint::Auto,
+        }
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -98,19 +137,50 @@ fn main() {
 }
 
 fn run(cli: Cli) -> Result<i32> {
-    if cli.verbose {
-        eprintln!("Parsing {}...", cli.file1.display());
+    let file1_is_stdin = cli.file1 == "-";
+    let file2_is_stdin = cli.file2 == "-";
+
+    // Validate stdin usage
+    if file1_is_stdin && file2_is_stdin {
+        bail!("Cannot read both inputs from stdin");
     }
 
-    let old = parse_file(&cli.file1)
-        .with_context(|| format!("Failed to parse first file: {}", cli.file1.display()))?;
+    let format_hint: FormatHint = cli.input_format.map(Into::into).unwrap_or(FormatHint::Auto);
+
+    // Read stdin content early if needed (can only read once)
+    let stdin_content = if file1_is_stdin || file2_is_stdin {
+        let mut content = String::new();
+        io::stdin()
+            .read_to_string(&mut content)
+            .context("Failed to read from stdin")?;
+        Some(content)
+    } else {
+        None
+    };
 
     if cli.verbose {
-        eprintln!("Parsing {}...", cli.file2.display());
+        eprintln!("Parsing {}...", &cli.file1);
     }
 
-    let new = parse_file(&cli.file2)
-        .with_context(|| format!("Failed to parse second file: {}", cli.file2.display()))?;
+    let old = if file1_is_stdin {
+        parse_content(stdin_content.as_ref().unwrap(), format_hint, "<stdin>")
+            .context("Failed to parse stdin")?
+    } else {
+        parse_file(&PathBuf::from(&cli.file1))
+            .with_context(|| format!("Failed to parse first file: {}", &cli.file1))?
+    };
+
+    if cli.verbose {
+        eprintln!("Parsing {}...", &cli.file2);
+    }
+
+    let new = if file2_is_stdin {
+        parse_content(stdin_content.as_ref().unwrap(), format_hint, "<stdin>")
+            .context("Failed to parse stdin")?
+    } else {
+        parse_file(&PathBuf::from(&cli.file2))
+            .with_context(|| format!("Failed to parse second file: {}", &cli.file2))?
+    };
 
     if cli.verbose {
         eprintln!("Computing diff...");
@@ -122,7 +192,19 @@ fn run(cli: Cli) -> Result<i32> {
         array_diff_strategy: ArrayDiffStrategy::Positional,
     };
 
-    let diff = compute_diff(&old, &new, &diff_config);
+    let mut diff = compute_diff(&old, &new, &diff_config);
+
+    // Apply path filtering if configured
+    if !cli.ignore_patterns.is_empty() || !cli.only_patterns.is_empty() {
+        let mut filter_config = FilterConfig::new();
+        for pattern in &cli.ignore_patterns {
+            filter_config = filter_config.ignore(pattern);
+        }
+        for pattern in &cli.only_patterns {
+            filter_config = filter_config.only(pattern);
+        }
+        diff = filter_diff(&diff, &filter_config);
+    }
 
     if cli.verbose {
         eprintln!("Formatting output...");
