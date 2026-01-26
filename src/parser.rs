@@ -81,10 +81,13 @@ pub fn parse_file(path: &Path) -> Result<Node, ParseError> {
             .map_err(|e| ParseError::json_error(path.to_string_lossy().to_string(), e)),
         Some("yaml") | Some("yml") => parse_yaml(&content)
             .map_err(|e| ParseError::yaml_error(path.to_string_lossy().to_string(), e)),
+        Some("toml") => parse_toml(&content)
+            .map_err(|e| ParseError::toml_error(path.to_string_lossy().to_string(), e)),
         _ => {
             parse_json(&content)
                 .map_err(|_| ())
                 .or_else(|_| parse_yaml(&content).map_err(|_| ()))
+                .or_else(|_| parse_toml(&content).map_err(|_| ()))
                 .map_err(|_| ParseError::unknown_format(path.to_string_lossy().to_string()))
         }
     }
@@ -134,6 +137,32 @@ pub fn parse_json(content: &str) -> Result<Node, serde_json::Error> {
 pub fn parse_yaml(content: &str) -> Result<Node, serde_yaml::Error> {
     let value: serde_yaml::Value = serde_yaml::from_str(content)?;
     Ok(yaml_to_node(value))
+}
+
+/// Parses a TOML string into a Node.
+///
+/// # Arguments
+///
+/// * `content` - The TOML string to parse
+///
+/// # Returns
+///
+/// Returns the parsed Node on success, or a toml::de::Error on failure.
+///
+/// # Examples
+///
+/// ```
+/// use sdiff::parser::parse_toml;
+///
+/// let toml = r#"
+/// name = "Alice"
+/// age = 30
+/// "#;
+/// let node = parse_toml(toml).unwrap();
+/// ```
+pub fn parse_toml(content: &str) -> Result<Node, toml::de::Error> {
+    let value: toml::Value = toml::from_str(content)?;
+    Ok(toml_to_node(value))
 }
 
 /// Converts a serde_json::Value to our Node representation.
@@ -220,6 +249,34 @@ fn yaml_to_node(value: serde_yaml::Value) -> Node {
             Node::Object(hash_map)
         }
         serde_yaml::Value::Tagged(tagged) => yaml_to_node(tagged.value),
+    }
+}
+
+/// Converts a toml::Value to our Node representation.
+///
+/// This function recursively converts TOML values to our AST. TOML has some
+/// additional types beyond JSON (like datetime) which are converted to strings.
+///
+/// # Arguments
+///
+/// * `value` - The toml::Value to convert
+///
+/// # Returns
+///
+/// Returns a Node representing the same data.
+fn toml_to_node(value: toml::Value) -> Node {
+    match value {
+        toml::Value::String(s) => Node::String(s),
+        toml::Value::Integer(i) => Node::Number(i as f64),
+        toml::Value::Float(f) => Node::Number(f),
+        toml::Value::Boolean(b) => Node::Bool(b),
+        toml::Value::Datetime(dt) => Node::String(dt.to_string()),
+        toml::Value::Array(arr) => Node::Array(arr.into_iter().map(toml_to_node).collect()),
+        toml::Value::Table(t) => {
+            let map: HashMap<String, Node> =
+                t.into_iter().map(|(k, v)| (k, toml_to_node(v))).collect();
+            Node::Object(map)
+        }
     }
 }
 
