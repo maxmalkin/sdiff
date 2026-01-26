@@ -104,7 +104,7 @@ impl PathPattern {
             // Pattern empty but path remains - no match
             (None, Some(_)) => false,
             // Path empty but pattern remains
-            (Some(seg), None) => {
+            (Some(_seg), None) => {
                 // Only match if remaining pattern is all double wildcards
                 pattern.iter().all(|s| matches!(s, PatternSegment::DoubleWildcard))
             }
