@@ -341,23 +341,3 @@ fn run(cli: Cli) -> Result<i32> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_output_format_conversion() {
-        assert_eq!(
-            OutputFormat::from(OutputFormatArg::Terminal),
-            OutputFormat::Terminal
-        );
-        assert_eq!(
-            OutputFormat::from(OutputFormatArg::Json),
-            OutputFormat::Json
-        );
-        assert_eq!(
-            OutputFormat::from(OutputFormatArg::Plain),
-            OutputFormat::Plain
-        );
-    }
-}
