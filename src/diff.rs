@@ -461,7 +461,13 @@ fn diff_arrays_lcs(
                 // Elements match, but recursively diff in case of nested differences
                 let mut new_path = path.clone();
                 new_path.push(format!("[{}]", new_i));
-                diff_nodes(&old_arr[old_idx], &new_arr[new_i], new_path, changes, config);
+                diff_nodes(
+                    &old_arr[old_idx],
+                    &new_arr[new_i],
+                    new_path,
+                    changes,
+                    config,
+                );
                 new_idx = new_i + 1;
             }
             EditOp::Delete(old_idx) => {
