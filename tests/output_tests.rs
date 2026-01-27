@@ -1,7 +1,6 @@
 use sdiff::diff::{Change, ChangeType, Diff, DiffStats};
 use sdiff::output::{format_diff, OutputFormat, OutputOptions};
 use sdiff::Node;
-use std::collections::HashMap;
 
 #[test]
 fn test_format_plain_no_changes() {
