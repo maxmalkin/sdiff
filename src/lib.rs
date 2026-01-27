@@ -28,6 +28,7 @@
 pub mod diff;
 pub mod error;
 pub mod filter;
+pub mod git;
 pub mod output;
 pub mod parser;
 pub mod tree;
@@ -36,5 +37,7 @@ pub mod tree;
 pub use diff::{compute_diff, ArrayDiffStrategy, Change, ChangeType, Diff, DiffConfig};
 pub use error::{OutputError, ParseError, SdiffError};
 pub use output::{format_diff, OutputFormat, OutputOptions};
-pub use parser::{parse_content, parse_file, parse_json, parse_stdin, parse_toml, parse_yaml, FormatHint};
+pub use parser::{
+    parse_content, parse_file, parse_json, parse_stdin, parse_toml, parse_yaml, FormatHint,
+};
 pub use tree::Node;
