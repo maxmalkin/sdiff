@@ -64,11 +64,9 @@ impl PathPattern {
         match (pattern.first(), path.first()) {
             (None, None) => true,
             (None, Some(_)) => false,
-            (Some(_seg), None) => {
-                pattern
-                    .iter()
-                    .all(|s| matches!(s, PatternSegment::DoubleWildcard))
-            }
+            (Some(_seg), None) => pattern
+                .iter()
+                .all(|s| matches!(s, PatternSegment::DoubleWildcard)),
             (Some(seg), Some(path_seg)) => match seg {
                 PatternSegment::Literal(lit) => {
                     if lit == path_seg {
