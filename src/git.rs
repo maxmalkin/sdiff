@@ -137,7 +137,17 @@ fn is_git_hash(s: &str) -> bool {
 fn get_executable_path() -> GitResult<String> {
     env::current_exe()
         .map_err(|_| GitError::ExecutableNotFound)
-        .map(|p| p.to_string_lossy().into_owned())
+        .map(|p| {
+            let path = p.to_string_lossy().into_owned();
+            path.replace("\\", "/")
+        })
+    // match env::current_exe() {
+    //     Ok(path_buf) => {
+    //         let path = path_buf.to_string_lossy().into_owned();
+    //         Ok(path.replace("\\", "/"))
+    //     }
+    //     Err(_) => Err(GitError::ExecutableNotFound),
+    // }
 }
 
 fn run_git_config(key: &str, value: &str) -> GitResult<()> {
