@@ -1,12 +1,12 @@
 [package]
-name = "sdiff"
+name = "sdiff-rs"
 version = "1.1.0"
 edition = "2021"
 authors = ["Max Malkin <max@malkin.io>"]
-description = "Semantic diff tool for structured data (JSON, YAML)"
+description = "Semantic diff tool for structured data (JSON, YAML, TOML), with CLI, package, and Git difftool support."
 license = "MIT"
 repository = "https://github.com/maxmalkin/sdiff"
-keywords = ["diff", "semantic", "json", "yaml", "cli"]
+keywords = ["diff", "semantic", "json", "yaml", "cli", "toml", "git-difftool"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
