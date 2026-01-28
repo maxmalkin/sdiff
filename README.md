@@ -1,6 +1,6 @@
 # SDIFF
 
-[![CI](https://github.com/maxmalkin/sdiff/actions/workflows/ci.yml/badge.svg)](https://github.com/maxmalkin/sdiff/actions/workflows/ci.yml)
+[![CI](https://github.com/maxmalkin/sdiff-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/maxmalkin/sdiff-rs/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MSRV](https://img.shields.io/badge/MSRV-1.93.0-blue.svg)](https://blog.rust-lang.org/)
 
@@ -26,8 +26,8 @@ cargo install sdiff-rs
 Or build from source:
 
 ```bash
-git clone https://github.com/maxmalkin/sdiff
-cd sdiff
+git clone https://github.com/maxmalkin/sdiff-rs
+cd sdiff-rs
 cargo install --path .
 ```
 
