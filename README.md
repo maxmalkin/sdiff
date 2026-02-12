@@ -23,14 +23,6 @@ Where traditional `diff` would show every line changed due to reformatting, SDIF
 cargo install sdiff-rs
 ```
 
-Or build from source:
-
-```bash
-git clone https://github.com/maxmalkin/sdiff-rs
-cd sdiff-rs
-cargo install --path .
-```
-
 ## Usage
 
 ```bash
@@ -64,7 +56,7 @@ Run `sdiff-rs --help` for all options.
 
 **Positional** (default): Compares arrays element-by-element by index. Fast but shows misleading changes when elements are inserted.
 
-**LCS** (Longest Common Subsequence): Detects true insertions and deletions. Better for arrays where elements may be added or removed in the middle.
+**LCS**: Detects true insertions and deletions. Better for arrays where elements may be added or removed in the middle.
 
 ```bash
 # Example: [1, 2, 3] → [1, 4, 2, 3]
@@ -93,7 +85,7 @@ sdiff-rs old.json new.json --only "spec.**"            # Only show spec changes
 sdiff-rs old.json new.json --only "data.*" --ignore "data.internal"
 ```
 
-### Git Integration
+### Git 
 
 Use sdiff-rs as a git difftool for structured data files:
 
@@ -105,20 +97,11 @@ sdiff-rs --git-install
 git difftool -t sdiff-rs HEAD~1 -- config.json
 git difftool -t sdiff-rs main feature -- settings.yaml
 
-# Check configuration status
+# Check config status
 sdiff-rs --git-status
-
-# Uninstall
-sdiff-rs --git-uninstall
 ```
 
 For automatic usage with specific file types, add to `.gitattributes`:
-
-```
-*.json diff=sdiff-rs
-*.yaml diff=sdiff-rs
-*.toml diff=sdiff-rs
-```
 
 ### Exit Codes
 
